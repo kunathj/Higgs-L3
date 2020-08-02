@@ -1,0 +1,12 @@
+name: Higgs-L3
+channels:
+  - conda-forge
+dependencies:
+  - python=3.8
+  - jupyter
+  - matplotlib
+  - numpy
+  - pandas
+  - python-graphviz
+  - scipy
+  - scikit-learn
