@@ -6,11 +6,11 @@ import stats as stat
 
 
 #-------------------------------------------------------------------------------------------
-def BkgSigHistos (backgrounds, signals, datas, variable_binning,x_label,savepath=None) :
+def BkgSigHistos (backgrounds, signals, datas, variable_binnings,x_label,savepath=None) :
 
     bkg = backgrounds
     sigModels = signals
-    binning = variable_binning
+    binning = variable_binnings
     x_name, x_unit = x_label
     data_hist = datas
 
@@ -118,130 +118,49 @@ def LogLikRatioPlots(arrays,obs,Nbins=30,savepath=None) :
 
 fs=12
 #-------------------------------------------------------------------------------------------
-def TwoDHist(var1, var2, framesMC_HiggsModels, NoHiggs, data, framesMC_HiggsModelsNames, savepath=None, bins=(40,40)) :
+def TwoDHist(var1, var2, mc_higgs_models, mc_no_higgs, data, savepath=None, bins=(40,40)) :
 
     # does not work for composed variable
-    m_H = [85,90,95]
-    for i,df in enumerate(framesMC_HiggsModels) :
-        #dataframe = SelectionCut(dataframe=df) # remember to comment this in/out in both loops!
+    for m_higgs_name, df in mc_higgs_models.items():
         if var2 == 'composed':
-            var_2 = var2 + '_' + str(m_H[i])
+            var_2 = var2 + '_' + str(m_higgs_name[-2:])
         else: var_2 = var2
-        dataframe = df
-        plt.title (framesMC_HiggsModelsNames[i],fontsize=fs+2)
+        plt.title(m_higgs_name, fontsize=fs+2)
         plt.ylabel(var_2,fontsize=fs)
         plt.xlabel(var1,fontsize=fs)
-        if len(dataframe) <= 1:
-            print("Only %i events remaining in background %i after cuts!" %(len(dataframe), i))#framesMC_NoHiggsNames[i])
+        if len(df) <= 1:
+            print("Only %i events remaining in background %i after cuts!" %(len(df), i))
             continue
-        plt.hist2d(dataframe[var1],
-                        dataframe[var_2],
-                        #bins = [var_dict[var1]['binning'],var_dict[var2]['binning']],
-                        bins = bins,
-                        weights=dataframe['weight'])
+        plt.hist2d(df[var1], df[var_2], bins = bins, weights=df["weight"])
         plt.colorbar()
         plt.tight_layout()
         if savepath != None:
-            plt.savefig(savepath+var1+var_2+framesMC_HiggsModelsNames[i])
+            plt.savefig(savepath+var1+var_2+m_higgs_name)
         plt.show()
 
-    for j,df in enumerate([NoHiggs]):#(framesMC_NoHiggs) :
-        #dataframe = SelectionCut(dataframe=df) # remember to comment this in/out in both loops!
-        if var2 == 'composed':
-            var_2 = var2 + '_' + str(m_H[j])
-            print("Background and data distribution are printed for composed 85 GeV Higgs. For the other composed variables, choose them instead of composed as variable.")
-        else: var_2 = var2
-        dataframe = df
-        plt.title ('background',fontsize=fs+2)
-        plt.ylabel(var_2,fontsize=fs)
-        plt.xlabel(var1,fontsize=fs)
-        plt.hist2d(dataframe[var1],
-                        dataframe[var_2],
-                        bins=bins,
-                        #bins = [var_dict[var1]['binning'],var_dict[var2]['binning']],
-                        weights=dataframe['weight'])
-        plt.colorbar()
-        plt.tight_layout()
-        if savepath != None:
-            plt.savefig(savepath+var1+var_2+'background')
-        plt.show()
+    if var2 == 'composed':
+        var_2 = var2 + "_85"
+        print("Background and data distribution are printed for composed 85 GeV Higgs. For the other composed variables, choose them instead of composed as variable.")
+    else:
+        var_2 = var2
+    df = mc_no_higgs
+    plt.title ('background',fontsize=fs+2)
+    plt.ylabel(var_2,fontsize=fs)
+    plt.xlabel(var1,fontsize=fs)
+    plt.hist2d(df[var1], df[var_2], bins=bins, weights=df["weight"])
+    plt.colorbar()
+    plt.tight_layout()
+    if savepath != None:
+        plt.savefig(savepath+var1+var_2+'background')
+    plt.show()
 
-    for i,df in enumerate([data]):#(framesMC_NoHiggs) :
-        #dataframe = SelectionCut(dataframe=df) # remember to comment this in/out in both loops!
-        if var2 == 'composed':
-            var_2 = var2 + '_' + str(m_H[i])
-        else: var_2 = var2
-        dataframe = df
-        plt.title('data',fontsize=fs+2)
-        plt.ylabel(var_2,fontsize=fs)
-        plt.xlabel(var1,fontsize=fs)
-        plt.hist2d(dataframe[var1],
-                        dataframe[var_2],
-                        bins=bins,
-                        #bins = [var_dict[var1]['binning'],var_dict[var2]['binning']],
-                        weights=dataframe['weight'])
-        plt.colorbar()
-        plt.tight_layout()
-        if savepath != None:
-            plt.savefig(savepath+var1+var_2+'data')
-        plt.show()
-#-------------------------------------------------------------------------------------------
-
-
-
-#-------------------------------------------------------------------------------------------
-def TwoDHistFull(var1, var2, framesMC_HiggsModels, frames_NoHiggs, frames_data, framesMC_HiggsModelsNames, savepath=None, bins=(40,40)) :
-    m_H = [85,90,95]
-    for i,df in enumerate(framesMC_HiggsModels) :
-        #dataframe = SelectionCut(dataframe=df) # remember to comment this in/out in both loops!
-        if var2 == 'composed':
-            var_2 = var2 + '_' + str(m_H[i])
-        else: var_2 = var2
-        dataframe = df
-        plt.title (framesMC_HiggsModelsNames[i],fontsize=fs+2)
-        plt.ylabel(var_2,fontsize=fs)
-        plt.xlabel(var1,fontsize=fs)
-        if len(dataframe) <= 1:
-            print("Only %i events remaining in background %i after cuts!" %(len(dataframe), i))#framesMC_NoHiggsNames[i])
-            continue
-        plt.hist2d(dataframe[var1],
-                        dataframe[var_2],
-                        #bins = [var_dict[var1]['binning'],var_dict[var2]['binning']],
-                        bins = bins,
-                        weights=dataframe['weight'])
-        plt.colorbar()
-        plt.tight_layout()
-        if savepath != None:
-            plt.savefig(savepath+var1+var_2+framesMC_HiggsModelsNames[i])
-        plt.show()
-
-        dataframe = frames_NoHiggs[i]
-        plt.title ('background_'+str(m_H[i]),fontsize=fs+2)
-        plt.ylabel(var_2,fontsize=fs)
-        plt.xlabel(var1,fontsize=fs)
-        plt.hist2d(dataframe[var1],
-                        dataframe[var_2],
-                        bins=bins,
-                        #bins = [var_dict[var1]['binning'],var_dict[var2]['binning']],
-                        weights=dataframe['weight'])
-        plt.colorbar()
-        plt.tight_layout()
-        if savepath != None:
-            plt.savefig(savepath+var1+var_2+'background')
-        plt.show()
-
-        dataframe = frames_data[i]
-        plt.title('data_'+str(m_H[i]),fontsize=fs+2)
-        plt.ylabel(var_2,fontsize=fs)
-        plt.xlabel(var1,fontsize=fs)
-        plt.hist2d(dataframe[var1],
-                        dataframe[var_2],
-                        bins=bins,
-                        #bins = [var_dict[var1]['binning'],var_dict[var2]['binning']],
-                        weights=dataframe['weight'])
-        plt.colorbar()
-        plt.tight_layout()
-        if savepath != None:
-            plt.savefig(savepath+var1+var_2+'data')
-        plt.show()
-#-------------------------------------------------------------------------------------------
+    df  = data
+    plt.title('data',fontsize=fs+2)
+    plt.ylabel(var_2,fontsize=fs)
+    plt.xlabel(var1,fontsize=fs)
+    plt.hist2d(df[var1], df[var_2], bins=bins, weights=df["weight"])
+    plt.colorbar()
+    plt.tight_layout()
+    if savepath != None:
+        plt.savefig(savepath+var1+var_2+'data')
+    plt.show()

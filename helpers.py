@@ -110,6 +110,7 @@ def addComposedVariable(df, with_mmis=False):
         name = "composed_" + mass
         if with_mmis:
             name += "_with_mmis"
+        counts = 0
         for i, var in enumerate(variables):
-            count += coeffs[mass][i] * df[var]
+            counts += coeffs[mass][i] * df[var]
         df[name] = counts
