@@ -5,8 +5,8 @@ from scipy import special
 import stats as stat
 
 
-#-------------------------------------------------------------------------------------------
-def BkgSigHistos (backgrounds, signals, datas, variable_binnings,x_label,savepath=None) :
+def BkgSigHistos (backgrounds, signals, datas,
+                  variable_binnings, x_label, savepath=None):
 
     bkg = backgrounds
     sigModels = signals
@@ -50,10 +50,8 @@ def BkgSigHistos (backgrounds, signals, datas, variable_binnings,x_label,savepat
         #plt.savefig('plots/test')
         plt.savefig(savepath)
     plt.show()
-#-------------------------------------------------------------------------------------------
 
 
-#-------------------------------------------------------------------------------------------
 def LogLikRatioPlots(arrays,obs,Nbins=30,savepath=None) :
 
 
@@ -113,11 +111,9 @@ def LogLikRatioPlots(arrays,obs,Nbins=30,savepath=None) :
     plt.show()
 
     return CLlist, QuantileList_b, QuantileList_sPlusb
-#-------------------------------------------------------------------------------------------
 
 
 fs=12
-#-------------------------------------------------------------------------------------------
 def TwoDHist(var1, var2, mc_higgs_models, mc_no_higgs, data, savepath=None, bins=(40,40)) :
 
     # does not work for composed variable
