@@ -61,3 +61,18 @@ def GetQuantiles (hist,binning) :
 
     return [Median,[OneSigmaLeft,OneSigmaRight],[TwoSigmaLeft,TwoSigmaRight]]
 #-------------------------------------------------------------------------------------------
+
+def GetCLOneMinusb(array, cut):
+    hist, binning = np.histogram(array,bins=300)
+    hist = hist / (1.*len(array))
+
+
+    OneMinusCLb = []
+    for c in cut :
+        try :
+            pos =  np.where(binning <= c)[0][-1]
+            OneMinusCLb.append(sum(hist[:pos]))
+        except :
+            OneMinusCLb.append(0)
+
+    return OneMinusCLb
