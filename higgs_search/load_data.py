@@ -3,7 +3,7 @@ import pandas as pd
 import pickle
 from sklearn.model_selection import train_test_split
 
-import helpers
+from .helpers import addLogisticRegressionResults, bdt_cut, kinematical_vars
 
 
 luminosity = 176.773
@@ -51,19 +51,6 @@ for process in n_mc_no_higgs:
     mc_no_higgs_frames[process]["class"] = 0
 
 
-# Choose only those columns which have some kinematical meaning
-# and thus can be used for training.
-kinematical_vars = [
-    "btag1", "btag2",
-    "ucsdbt0", "mvis", "mvissc", "fmvis", "fmmis", "fth1",
-    "mmis", "acthm", "maxcthj", "acop", "maxxov", "enj1",
-    "thj1", "phj1", "xmj1", "enj2", "thj2", "phj2", "xmj2",
-    "pho_num", "pho_ene", "pho_the", "pho_phi", "ele_num", "ele_ene",
-    "ele_the", "ele_phi", "muon_num", "muon_ene", "muon_the",
-    "muon_phi"
-]
-
-
 def getTrainAndTest(higgs_mass, bdt_precut=False, drop=None,
                     upweight_signal=False
 ):
@@ -76,7 +63,7 @@ def getTrainAndTest(higgs_mass, bdt_precut=False, drop=None,
         with open(f"tmp/BDT_{higgs_mass}.pkl", "rb") as fid:
             bdt_loaded = pickle.load(fid)
         df_MVA["bdt"] = bdt_loaded.decision_function(df_MVA[kinematical_vars])
-        df_MVA = df_MVA[df_MVA["bdt"] > helpers.bdt_cut[higgs_mass]]
+        df_MVA = df_MVA[df_MVA["bdt"] > bdt_cut[higgs_mass]]
         del df_MVA["bdt"]
 
     if drop is not None:
@@ -106,7 +93,7 @@ def getPreselectedSBD():
     for frame in itertools.chain(mc_higgs_models.values(),
                                 mc_no_higgs_frames.values(),
                                 [data]):
-        helpers.addLogisticRegressionResults(df=frame)
+        addLogisticRegressionResults(df=frame)
         for higgs_mass in mc_higgs_models:
             bdt_response = bdt_collection[higgs_mass].decision_function
             frame[f"BDT_selCut{higgs_mass[-2:]}"] = bdt_response(
@@ -118,7 +105,7 @@ def getPreselectedSBD():
         s = mc_higgs_models[m_h]
         b = pd.concat(mc_no_higgs_frames, ignore_index=True)
         d = data
-        sig[m_h] = s[s[f"BDT_selCut{m_h[-2:]}"] > helpers.bdt_cut[m_h]][vars]
-        bkg[m_h] = b[b[f"BDT_selCut{m_h[-2:]}"] > helpers.bdt_cut[m_h]][vars]
-        dat[m_h] = d[d[f"BDT_selCut{m_h[-2:]}"] > helpers.bdt_cut[m_h]][vars]
+        sig[m_h] = s[s[f"BDT_selCut{m_h[-2:]}"] > bdt_cut[m_h]][vars]
+        bkg[m_h] = b[b[f"BDT_selCut{m_h[-2:]}"] > bdt_cut[m_h]][vars]
+        dat[m_h] = d[d[f"BDT_selCut{m_h[-2:]}"] > bdt_cut[m_h]][vars]
     return sig, bkg, dat

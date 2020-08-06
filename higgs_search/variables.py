@@ -52,7 +52,7 @@ info["xmj2"] = dict(
 info["ucsdbt0"] = dict(
     x_name="B tag, based on tracking information only",
     x_unit="$1$",
-    binning=np.append(np.linspace(0, 8, 10), np.array([10, 14])),
+    binning=np.concatenate([np.linspace(0, 8, 10), np.array([10, 14])]),
 )
 
 info["btag1"] = dict(

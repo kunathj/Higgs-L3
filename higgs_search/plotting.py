@@ -4,14 +4,14 @@ import numpy as np
 from scipy import special
 from sklearn.metrics import confusion_matrix
 
-import variables
+from .helpers import variable_info
 
 fontsize = 14
 
 def BkgSigHistos(backgrounds, signals, datas, var, binning, asymm_errors=False):
-    x_unit = variables.info[var]["x_unit"]
-    if var in variables.info:
-        x_name = variables.info[var]["x_name"]
+    x_unit = variable_info[var]["x_unit"]
+    if var in variable_info:
+        x_name = variable_info[var]["x_name"]
     else:
         x_name = var
 
