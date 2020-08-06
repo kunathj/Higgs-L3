@@ -2,42 +2,37 @@ import numpy as np
 
 
 #-------------------------------------------------------------------------------------------
-def LogLikRatio (background, signal, N_experiments=10000) :
+def prepareLikelihoodRatio(signal, background):
+    if sum(signal[np.where(background == 0)]) != 0:
+        print("Weird behavior: We found bins with zero bkg expectation and "
+              "non-zero signal expectation. This should not happen. "
+              "The bins are skipped.")
+    b = background[np.where(background != 0)]
+    s = signal[np.where(background != 0)]
+    def toy_llr(n_random):
+        return 2*s.sum() - 2*np.dot(n_random, np.log(1 + s/b))
+    return s, b, toy_llr
 
 
-    b = background
-    s = signal
-    s_tot = s.sum()
+def LogLikRatio(background, signal, n_experiments=10000):
+    s, b, toy_llr = prepareLikelihoodRatio(signal, background)
 
     llr_b_like = []
-    llr_sPlusb_like = []
+    llr_s_plus_b_like = []
+    for k in range(n_experiments):
+        n_b = np.random.poisson(lam=b)
+        n_s_plus_b = np.random.poisson(lam=(s+b))
 
-    for k in range(N_experiments) :
-        N_b = np.random.poisson(lam=b)
-        N_sPlusb = np.random.poisson(lam=(s+b))
-
-        llr_b_like.append(2*s_tot - 2*np.dot(N_b,np.log(1+s/b)))
-        llr_sPlusb_like.append(2*s_tot - 2*np.dot(N_sPlusb,np.log(1+s/b)))
-
-    return llr_b_like, llr_sPlusb_like
+        llr_b_like.append(toy_llr(n_b))
+        llr_s_plus_b_like.append(toy_llr(n_s_plus_b))
+    return llr_b_like, llr_s_plus_b_like
 #-------------------------------------------------------------------------------------------
 
 
-#-------------------------------------------------------------------------------------------
-def LogLikRatioObserved (background, signals, data) :
-
-
-    b = background
-    N = data
-    llr_data_is_b_like = []
-    for s in signals :
-        s_tot = s.sum()
-
-        llr_data_is_b_like.append(2*s_tot - 2*np.dot(N,np.log(1+s/b)))
-
-
-    return llr_data_is_b_like
-#-------------------------------------------------------------------------------------------
+def LogLikRatioObserved(background, signal, data):
+    s, b, toy_llr = prepareLikelihoodRatio(signal, background)
+    d = data[np.where(background != 0)]
+    return toy_llr(d)
 
 
 #-------------------------------------------------------------------------------------------
