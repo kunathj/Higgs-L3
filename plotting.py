@@ -1,15 +1,14 @@
-import numpy as np
+import itertools
 import matplotlib.pyplot as plt
-import os
-from scipy import special, stats
-import stats as stat
+import numpy as np
+from scipy import special
+from sklearn.metrics import confusion_matrix
+
 import variables
 
 fontsize = 14
 
-def BkgSigHistos(backgrounds, signals, datas, var, binning,
-                 asymm_errors=False, save_as=None,
-):
+def BkgSigHistos(backgrounds, signals, datas, var, binning, asymm_errors=False):
     x_unit = variables.info[var]["x_unit"]
     if var in variables.info:
         x_name = variables.info[var]["x_name"]
@@ -51,79 +50,83 @@ def BkgSigHistos(backgrounds, signals, datas, var, binning,
             ax.set_xlabel(f"{x_name} [{x_unit}]", fontsize=fontsize)
         plt.tight_layout()
     fig.subplots_adjust(hspace=0)
-    if save_as != None:
-        plt.savefig(save_as)
 
 
+def getQuantiles(hist, binning):
+    """Note that the histogram must be normalized.
+    """
+    cumulative = np.cumsum(hist)
+    two_sigma_left =  binning[np.where(cumulative <=    .023)[0][-1]]
+    one_sigma_left =  binning[np.where(cumulative <=    .160)[0][-1]]
+    median =          binning[np.where(cumulative <=    .500)[0][-1]]
+    one_sigma_right = binning[np.where(cumulative < 1 - .160)[0][-1]]
+    two_sigma_right = binning[np.where(cumulative < 1 - .023)[0][-1]]
+    return [median, [one_sigma_left, one_sigma_right],
+                    [two_sigma_left, two_sigma_right]]
 
+def LogLikRatioPlots(ratios, obs, n_bins=30):
+    cl_s_and_b, quantiles_b, quantiles_s_plus_b  = {}, {}, {}
 
-def LogLikRatioPlots(arrays,obs,Nbins=30,savepath=None) :
+    fig, axs = plt.subplots(nrows=len(ratios), ncols=1, figsize=(8,10))
+    for i, higgs_mass in enumerate(ratios):
+        llr_b, llr_s_plus_b = ratios[higgs_mass]
+        binning = np.linspace(np.minimum(llr_b, llr_s_plus_b).min(),
+                              np.maximum(llr_b, llr_s_plus_b).max(), n_bins)
+        width = binning[1] - binning[0]
 
+        llr_b_hist = np.histogram(llr_b, bins=binning)[0] / len(llr_b)
+        quantiles_b[higgs_mass] = getQuantiles(llr_b_hist, binning)
 
-    fig, axs = plt.subplots(nrows=3, ncols=1,figsize=(8,10))
-    m_H = [85,90,95]
+        llr_s_plus_b_hist = np.histogram(llr_s_plus_b, bins=binning)[0] / len(llr_b)
+        quantiles_s_plus_b[higgs_mass] = getQuantiles(llr_s_plus_b_hist, binning)
 
-    CLlist = []
+        axs[i].step(x=binning[:-1],y=llr_b_hist,
+                    color="blue",label="bkg-like")
+        axs[i].step(x=binning[:-1],y=llr_s_plus_b_hist,
+                    color="red",label="sig+bkg-like")
 
-    QuantileList_b = []
-    QuantileList_sPlusb = []
+        x1 = binning[binning <= obs[higgs_mass]]
+        x2 = binning[binning >  obs[higgs_mass]]
+        axs[i].bar(x2[:-1]-width/2., llr_s_plus_b_hist[-len(x2)+1:],
+                   width=width, color="blue", alpha=.5)
+        axs[i].bar(x1-width/2., llr_b_hist[:len(x1)],
+                   width=width, color="red", alpha=.5)
 
+        axs[i].set_xlabel("$-2 \ln (Q)$", fontsize=fontsize)
+        axs[i].set_ylabel("p.d.f.", fontsize=fontsize)
+        axs[i].set_title(f"signal model ($m_\mathrm{{H}} = $ {higgs_mass[-2:]} "
+                         "GeV)")
+        axs[i].axvline(obs[higgs_mass], label="observed", color="k")
+        axs[i].legend(fontsize=fontsize)
 
-    for i in range(3) :
-        ax = axs[i]
-
-        llr_b, llr_sPlusb = arrays[i]
-        norm = len(llr_b)
-        binning = np.linspace(np.minimum(llr_b,llr_sPlusb).min(),np.maximum(llr_b,llr_sPlusb).max(),Nbins)
-        width = binning[1]-binning[0]
-
-
-        llr_b_hist = 1.*np.histogram(llr_b,bins=binning)[0]/norm
-        QuantileList_b.append(stat.GetQuantiles(llr_b_hist,binning))
-
-
-        pos =  np.where(binning <= obs[i])[0][-1]
-
-        if min(binning)<obs[i]:
-            pos =  np.where(binning <= obs[i])[0][-1]
+        if min(binning) < obs[higgs_mass]:
+            obs_bin =  np.where(binning <= obs[higgs_mass])[0][-1]
         else:
-            pos = 0
-            print("Higgs-Model %i: llr changed from %f to %f to fit into plot" %(m_H[i],obs[i],min(binning)))
-        print(pos)
-        OneMinusCLb =  sum(llr_b_hist[:pos])
-
-        llr_sPlusb_hist = 1.*np.histogram(llr_sPlusb,bins=binning)[0]/norm
-        QuantileList_sPlusb.append(stat.GetQuantiles(llr_sPlusb_hist,binning))
-
-        CLsPlusb =  sum(llr_sPlusb_hist[pos:])
-        CLlist.append([OneMinusCLb, CLsPlusb])
-
-        ax.step(x=binning[:-1],y=llr_b_hist,color='blue',label='bkg-like')
-        ax.step(x=binning[:-1],y=llr_sPlusb_hist,color='red',label='sig+bkg-like')
-
-        x1 = binning[binning<=obs[i]]
-        x2 = binning[binning>obs[i]]
-
-        #ax.fill_between(x1,llr_b_hist[:len(x1)],color='red',alpha=0.5,interpolate=True)
-        #ax.fill_between(x2,llr_sPlusb_hist[-len(x2):],color='blue',alpha=0.5,interpolate=True)
-
-        ax.bar(x2[:-1]-width/2., llr_sPlusb_hist[-len(x2)+1:], width=width, color='blue', alpha=.5)
-        ax.bar(x1-width/2., llr_b_hist[:len(x1)], width=width, color='red', alpha=.5)
-
-
-        ax.set_xlabel(r'$-2 \ln (Q)$',fontsize=14)
-        ax.set_ylabel('p.d.f.',fontsize=14)
-        ax.set_title('signal model ' + r'($m_\mathrm{H} = $'+str(m_H[i])+' GeV)')
-        ax.axvline(obs[i],label='observed',color='k')
-        ax.legend(fontsize=14)
-
+            obs_bin = min(binning)
+            print(f"Higgs-Model {higgs_mass}: Observed llr changed from "
+                f"{obs[higgs_mass]} to {obs_bin} to fit into plot.")
+        one_minus_cl_b =  sum(llr_b_hist[:obs_bin])
+        cl_s_plus_b =  sum(llr_s_plus_b_hist[obs_bin:])
+        cl_s_and_b[higgs_mass] = [one_minus_cl_b, cl_s_plus_b]
     plt.tight_layout()
-    if (savepath != None) :
-        #plt.savefig('plots/test')
-        plt.savefig(savepath)
-    else :
-        plt.show()
+    return cl_s_and_b, quantiles_b, quantiles_s_plus_b
 
 
+def confusionMatrix(y_pred, y_test):
+    cm_total_counts = confusion_matrix(y_pred,y_test)
+    cm_normalized = cm_total_counts / cm_total_counts.sum(axis=0)
+    cm = cm_normalized.T
 
-    return CLlist, QuantileList_b, QuantileList_sPlusb
+    plt.imshow(cm, interpolation="nearest", cmap=plt.cm.Blues)
+
+    thresh = cm.min() + (cm.max() - cm.min())/2.
+    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        plt.text(j, i, f"{np.round(cm[i, j]*100, 0)} %",
+                 horizontalalignment="center",
+                 color="white" if cm[i, j] > thresh else "black")
+
+    classes = ["bkg", "sig"]
+    plt.xticks(np.arange(len(classes)), classes)
+    plt.yticks(np.arange(len(classes)), classes)
+    plt.xlabel("predicted category")
+    plt.ylabel("true category")
